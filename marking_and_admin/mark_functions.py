@@ -65,9 +65,13 @@ def build_spreadsheet_service():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
+            with open("temp_spreadsheet_creds.json", "w", encoding="utf-8") as tsc:
+                tsc.write(os.getenv("SPREADSHEET_CREDS", ""))
             flow = InstalledAppFlow.from_client_secrets_file(
-                "marking_and_admin/credentials.json", scopes
+                "temp_spreadsheet_creds.json", scopes
             )
+            with open("temp_spreadsheet_creds.json", "w", encoding="utf-8") as tsc:
+                tsc.write("")
             try:
                 creds = flow.run_local_server()
             except OSError as os_e:
