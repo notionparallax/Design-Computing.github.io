@@ -50,10 +50,8 @@ class RunCmd(threading.Thread):
 def build_spreadsheet_service():
     # If modifying these scopes, delete the file token.pickle.
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-    """Shows basic usage of the Sheets API.
-    Prints values from a sample spreadsheet.
-    """
     creds = None
+    # Shows basic usage of the Sheets API. Prints values from a sample spreadsheet.
     # The file token.pickle stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
@@ -68,15 +66,20 @@ def build_spreadsheet_service():
             with open("temp_spreadsheet_creds.json", "w", encoding="utf-8") as tsc:
                 tsc.write(os.getenv("SPREADSHEET_CREDS", ""))
             flow = InstalledAppFlow.from_client_secrets_file(
-                "temp_spreadsheet_creds.json", scopes
+                "temp_spreadsheet_creds.json",
+                scopes,
+                redirect_uri="https://design-computing.github.io/",
             )
-            with open("temp_spreadsheet_creds.json", "w", encoding="utf-8") as tsc:
-                tsc.write("")
+            # with open("temp_spreadsheet_creds.json", "w", encoding="utf-8") as tsc:
+            #     tsc.write("")
             try:
+                pass
                 creds = flow.run_local_server()
             except OSError as os_e:
                 print(os_e)
                 creds = flow.run_console()
+            except Exception as eeee:
+                print(eeee)
         # Save the credentials for the next run
         with open("token.pickle", "wb") as token:
             pickle.dump(creds, token)
@@ -202,8 +205,10 @@ def get_forks(
     api = "https://api.github.com"
     limit = 100
     # TODO: #29 take these secrets out, put them in an env, and reset them
-    client_id = os.getenv("CLIENT_ID_GITHUB","") # "040e86e3feed633710a0"
-    secret = os.getenv("SECRET_GITHUB","")#"69588d73388091b5ff8635fd1a788ea79177bf69"
+    client_id = os.getenv("CLIENT_ID_GITHUB", "")  # "040e86e3feed633710a0"
+    secret = os.getenv(
+        "SECRET_GITHUB", ""
+    )  # "69588d73388091b5ff8635fd1a788ea79177bf69"
     url = (
         f"{api}/repos/{org}/{repo}/forks?"
         f"per_page={limit}&"
@@ -246,7 +251,7 @@ def rate_limit_message(r):
 def update_repos(row: Series) -> str:
     """Git clone a repo, or if already cloned, git pull."""
     url = row["git_url"]
-    https_url = url.replace("git://","https://")
+    https_url = url.replace("git://", "https://")
     owner = row["owner"]
     path = os.path.normpath(os.path.join(ROOTDIR, owner))
     t = datetime.now().strftime("%H:%M:%S")
@@ -408,6 +413,16 @@ def get_readmes(row, output="mark", print_labbooks=False):
         return [mark, all_readme]
 
 
+def get_readme_text(row) -> str:
+    """Get the collected text of all the readme files."""
+    return get_readmes(row, output="textList", print_labbooks=False)
+
+
+def get_readme_mark(row) -> int:
+    """Get the number of readmen files that are filled in."""
+    return get_readmes(row, output="mark", print_labbooks=False)
+
+
 def test_in_clean_environment(
     row: Series,
     set_number: int,
@@ -499,13 +514,13 @@ def mark_a_specific_person_week(
             results_dict = json.loads(contents)
             results_dict["bigerror"] = ":)"
         log_progress(f" good for w{set_number}\n", logfile_name)
-    except Exception as e:
+    except Exception as mystery_exception:
         results_dict = {
-            "bigerror": str(e).replace(",", "~"),
+            "bigerror": str(mystery_exception).replace(",", "~"),
             "gh_username": row.owner,
         }  # the comma messes with the csv
 
-        log_progress(f" bad {e} w{set_number}\n", logfile_name)
+        log_progress(f" bad {mystery_exception} w{set_number}\n", logfile_name)
 
     elapsed_time = time.time() - start_time
     results_dict["time"] = elapsed_time
@@ -630,6 +645,7 @@ def do_the_marking(
     mark_w4=False,
     mark_w5=False,
     mark_exam=False,
+    test_number_of_students=0,
 ):
     global THIS_YEAR
     THIS_YEAR = this_year
@@ -653,6 +669,8 @@ def do_the_marking(
     students = get_student_data()
 
     mark_sheet = pd.DataFrame(students)
+    if test_number_of_students > 0:
+        mark_sheet = mark_sheet.head(test_number_of_students)
 
     deets = pd.DataFrame(list(mark_sheet.apply(get_details, axis=1)))
     # temp:
@@ -672,18 +690,51 @@ def do_the_marking(
     )
     mark_sheet.drop(["name"], axis=1, errors="ignore", inplace=True)
 
-    mark_sheet["readme_mark"] = mark_sheet.apply(get_readmes, args=("mark",), axis=1)
-    mark_sheet["readme_text"] = mark_sheet.apply(
-        get_readmes, args=("textList",), axis=1
-    )
+    mark_sheet["readme_mark"] = mark_sheet.apply(get_readme_mark, axis=1)
+    mark_sheet["readme_text"] = mark_sheet.apply(get_readme_text, axis=1)
 
+    use_nice_spreadsheet_connection = False
+    if not use_nice_spreadsheet_connection:
+        convert_result_dicts_to_ints(mark_sheet)
     mark_sheet.to_csv(MARKS_CSV)
 
-    data = [list(x) for x in mark_sheet.to_numpy()]
-    service = build_spreadsheet_service()
-    write(service, data=data)
+    if use_nice_spreadsheet_connection:
+        data = [list(x) for x in mark_sheet.to_numpy()]
+        service = build_spreadsheet_service()
+        write(service, data=data)
 
     print("that took", (time.time() - start_time) / 60, "minutes")
+
+
+def convert_result_dicts_to_ints(mark_sheet):
+    """Convert the dict of results into a single mark.
+
+    dict looks like this:
+    {
+      'of_total': 2,
+      'mark': 0,
+      'results': [
+        {'value': 0, 'name': 'Exercise 2: debug the file'},
+        {'value': 0, 'name': 'Lab book entry completed'}
+      ],
+      'week_number': 2,
+      'localError': ':)',
+      'repo_owner': 'rhiannon84',
+      'bigerror': ':)',
+      'time': 4.783979892730713
+    }
+    so we're just pulling the mark out, but it's fraught, so there's some checking.
+    """
+
+    def convert_d_to_i(results_dict) -> int:
+        try:
+            return results_dict.get("mark", 0)
+        except AttributeError as attr_err:
+            print(attr_err)
+            return 0
+
+    for i in range(1, 6):
+        mark_sheet[f"set{i}"] = mark_sheet[f"set{i}"].apply(convert_d_to_i)
 
 
 def get_student_data():
