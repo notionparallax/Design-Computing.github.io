@@ -639,14 +639,14 @@ def do_the_marking(
     force_marking=False,
     marking_spreadsheet_id: str = "16tESt_4BUf-9-oD04suTprkd1O0oEl6WjzflF_avSKY",  # 2022
     marks_csv: str = "marks.csv",
-    mark_w1:bool=True,
-    mark_w2:bool=False,
-    :bool=False,
-    mark_w4:bool=False,
-    mark_w5:bool=False,
-    mark_exam:bool=False,
-    test_number_of_students:int=0,
-)->None:
+    mark_w1: bool = True,
+    mark_w2: bool = False,
+    mark_w3: bool = False,
+    mark_w4: bool = False,
+    mark_w5: bool = False,
+    mark_exam: bool = False,
+    test_number_of_students: int = 0,
+) -> None:
     """do_the_marking Runs tests against all student work.
 
     Args:
@@ -657,6 +657,7 @@ def do_the_marking(
         marking_spreadsheet_id (str, optional): _description_. Defaults to "16tESt_4BUf-9-oD04suTprkd1O0oEl6WjzflF_avSKY".
         mark_w1 (bool, optional): _description_. Defaults to True.
         mark_w2 (bool, optional): _description_. Defaults to False.
+        mark_w3 (bool, optional): _description_. Defaults to False.
         mark_w4 (bool, optional): _description_. Defaults to False.
         mark_w5 (bool, optional): _description_. Defaults to False.
         mark_exam (bool, optional): _description_. Defaults to False.
