@@ -514,13 +514,13 @@ def mark_a_specific_person_week(
             results_dict = json.loads(contents)
             results_dict["bigerror"] = ":)"
         log_progress(f" good for w{set_number}\n", logfile_name)
-    except Exception as mystery_exception:
+    except json.JSONDecodeError as json_exception:
         results_dict = {
-            "bigerror": str(mystery_exception).replace(",", "~"),
+            "bigerror": str(json_exception).replace(",", "~"),
             "gh_username": row.owner,
         }  # the comma messes with the csv
 
-        log_progress(f" bad {mystery_exception} w{set_number}\n", logfile_name)
+        log_progress(f" bad {json_exception} w{set_number}\n", logfile_name)
 
     elapsed_time = time.time() - start_time
     results_dict["time"] = elapsed_time
