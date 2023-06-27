@@ -633,20 +633,35 @@ def mark_week(
 
 
 def do_the_marking(
-    this_year="2023",
-    rootdir="../StudentRepos",
-    chatty=False,
+    this_year: str = "2023",
+    rootdir: str = "../StudentRepos",
+    chatty: bool = False,
     force_marking=False,
-    marking_spreadsheet_id="16tESt_4BUf-9-oD04suTprkd1O0oEl6WjzflF_avSKY",  # 2022
-    marks_csv="marks.csv",
-    mark_w1=True,
-    mark_w2=False,
-    mark_w3=False,
-    mark_w4=False,
-    mark_w5=False,
-    mark_exam=False,
-    test_number_of_students=0,
-):
+    marking_spreadsheet_id: str = "16tESt_4BUf-9-oD04suTprkd1O0oEl6WjzflF_avSKY",  # 2022
+    marks_csv: str = "marks.csv",
+    mark_w1:bool=True,
+    mark_w2:bool=False,
+    :bool=False,
+    mark_w4:bool=False,
+    mark_w5:bool=False,
+    mark_exam:bool=False,
+    test_number_of_students:int=0,
+)->None:
+    """do_the_marking Runs tests against all student work.
+
+    Args:
+        this_year (str, optional): The year that you want to test. Defaults to "2023".
+        rootdir (str, optional): Where you want to keep all the repos you're working with. Defaults to "../StudentRepos".
+        chatty (bool, optional): Do you want it to be verbose? Defaults to False.
+        force_marking (bool, optional): _description_. Defaults to False.
+        marking_spreadsheet_id (str, optional): _description_. Defaults to "16tESt_4BUf-9-oD04suTprkd1O0oEl6WjzflF_avSKY".
+        mark_w1 (bool, optional): _description_. Defaults to True.
+        mark_w2 (bool, optional): _description_. Defaults to False.
+        mark_w4 (bool, optional): _description_. Defaults to False.
+        mark_w5 (bool, optional): _description_. Defaults to False.
+        mark_exam (bool, optional): _description_. Defaults to False.
+        test_number_of_students (int, optional): _description_. Defaults to 0.
+    """
     global THIS_YEAR
     THIS_YEAR = this_year
     global ROOTDIR
