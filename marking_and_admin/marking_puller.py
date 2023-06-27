@@ -28,8 +28,8 @@ if __name__ == "__main__":
         mark_w1=True,
         mark_w2=True,
         mark_w3=True,
-        mark_w4=False,
+        mark_w4=True,
         mark_w5=False,
         mark_exam=False,
-        test_number_of_students=2,  # if more than 0, will only mark the first n
+        test_number_of_students=0,  # if more than 0, will only mark the first N
     )
