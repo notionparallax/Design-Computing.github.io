@@ -25,14 +25,15 @@ def do_the_test(repo_path):
         test = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(test)
         print("about to test", repo_path)
-        r = test.theTests(repo_path)
-        r["localError"] = ":)"
-        return r
-    except Exception as e:
+        results = test.theTests(repo_path)
+        results["localError"] = ":)"
+        return results
+    except Exception as mystery_error:
         return {
             "of_total": 0,
             "mark": 0,
-            "localError": str(e).replace(",", "~"),  # the comma messes with the csv
+            "localError": str(mystery_error).replace(",", "~"),
+            # the comma messes with the csv
         }
 
 
@@ -70,9 +71,9 @@ OWNER:     {OWNER}
 """
 )
 
-with open("temp_results.json", "w") as temp_results:
-    results = results_as_json(REPO_PATH)
-    temp_results.write(results)
+with open("temp_results.json", "w", encoding="utf-8") as temp_results:
+    test_results = results_as_json(REPO_PATH)
+    temp_results.write(test_results)
     sleep(0.50)
 
 sleep(0.50)
