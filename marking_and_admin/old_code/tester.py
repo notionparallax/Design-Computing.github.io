@@ -3,7 +3,7 @@
 import os
 import time
 
-from marking_puller import RunCmd
+from marker import RunCmd
 
 LOCAL = os.path.dirname(os.path.realpath(__file__))
 week_number = 1
