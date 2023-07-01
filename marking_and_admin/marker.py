@@ -17,7 +17,7 @@ from mark_functions import do_the_marking
 MARKING_SPREADSHEET_ID = os.getenv("GOOGLE_SHEETS_KEY", "")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and MARKING_SPREADSHEET_ID != "":
     do_the_marking(
         this_year="2023",
         rootdir="../StudentRepos",
