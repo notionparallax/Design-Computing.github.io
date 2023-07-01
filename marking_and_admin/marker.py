@@ -18,7 +18,7 @@ if __name__ == "__main__" and MARKING_SPREADSHEET_ID != "":
         chatty=False,
         force_marking=True,
         marking_spreadsheet_id=MARKING_SPREADSHEET_ID,
-        marks_csv="marks.csv",
+        marks_csv="marking_and_admin/marks.csv",
         mark_w1=True,
         mark_w2=True,
         mark_w3=True,
