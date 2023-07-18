@@ -686,7 +686,7 @@ def do_the_marking(
 
     mark_sheet = pd.DataFrame(students)
     if test_number_of_students > 0:
-        mark_sheet = mark_sheet.head(test_number_of_students)
+        mark_sheet = mark_sheet.sample(test_number_of_students)
 
     deets = pd.DataFrame(list(mark_sheet.apply(get_details, axis=1)))
     # temp:
