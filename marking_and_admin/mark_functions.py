@@ -750,6 +750,7 @@ def convert_result_dicts_to_ints(mark_sheet):
             return 0
 
     for i in range(1, 6):
+        mark_sheet[f"set{i}_data"] = mark_sheet[f"set{i}"]
         mark_sheet[f"set{i}"] = mark_sheet[f"set{i}"].apply(
             convert_one_results_dict_to_an_int
         )
