@@ -29,4 +29,5 @@ if __name__ == "__main__" and MARKING_SPREADSHEET_ID != "":
         mark_w5=False,
         mark_exam=False,
         test_number_of_students=0,  # if more than 0, will only mark a sample of N repos
+        force_repos=["lvl-lim"],
     )

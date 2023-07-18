@@ -646,6 +646,7 @@ def do_the_marking(
     mark_w5: bool = False,
     mark_exam: bool = False,
     test_number_of_students: int = 0,
+    force_repos: list[str] = [],
 ) -> None:
     """do_the_marking Runs tests against all student work.
 
@@ -675,6 +676,8 @@ def do_the_marking(
     MARKING_SPREADSHEET_ID = marking_spreadsheet_id
     global MARKS_CSV
     MARKS_CSV = marks_csv
+    global FORCE_REPOS
+    FORCE_REPOS = force_repos
 
     start_time = time.time()
 
@@ -766,7 +769,7 @@ def get_student_data():
         with open(file_name, "r") as data_file:
             students = json.load(data_file)
     else:
-        force_repos =["lvl-lim"] # TODO: move this into an arg in marker.py 
+        force_repos = FORCE_REPOS
         students = get_forks(force_inclusion_of_these_repos=force_repos)
         with open("student.json", "w") as data_file:
             json.dump(students, data_file, indent=2)
