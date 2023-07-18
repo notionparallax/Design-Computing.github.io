@@ -742,7 +742,7 @@ def convert_result_dicts_to_ints(mark_sheet):
     so we're just pulling the mark out, but it's fraught, so there's some checking.
     """
 
-    def convert_d_to_i(results_dict) -> int:
+    def convert_one_results_dict_to_an_int(results_dict) -> int:
         try:
             return results_dict.get("mark", 0)
         except AttributeError as attr_err:
@@ -750,7 +750,9 @@ def convert_result_dicts_to_ints(mark_sheet):
             return 0
 
     for i in range(1, 6):
-        mark_sheet[f"set{i}"] = mark_sheet[f"set{i}"].apply(convert_d_to_i)
+        mark_sheet[f"set{i}"] = mark_sheet[f"set{i}"].apply(
+            convert_one_results_dict_to_an_int
+        )
 
 
 def get_student_data():
