@@ -5,6 +5,7 @@ This pulls the latest copy of all the repos
 It can clone new repos if you delete the students pickle
 """
 import os
+import sys
 
 from mark_functions import do_the_marking
 
@@ -12,6 +13,8 @@ MARKING_SPREADSHEET_ID = os.getenv("GOOGLE_SHEETS_KEY", "")
 
 
 if __name__ == "__main__" and MARKING_SPREADSHEET_ID != "":
+    sys.path.insert(0, "/workspaces/me/set2")
+
     do_the_marking(
         this_year="2023",
         rootdir="../StudentRepos",
