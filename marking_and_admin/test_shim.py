@@ -58,18 +58,18 @@ else:
     REPO_PATH = os.path.normpath(sys.argv[2])
     OWNER = sys.argv[3]
 
-print("\n In the shim\n◹◸◹◸◹◸◹◸◹◸◹◸\n\nsys.argv:")
-for i, a in list(enumerate(sys.argv)):
-    print(f"{i}: {a}")
+# print("\n In the shim\n◹◸◹◸◹◸◹◸◹◸◹◸\n\nsys.argv:")
+# for i, a in list(enumerate(sys.argv)):
+#     print(f"{i}: {a}")
 
-print(
-    f"""
+# print(
+#     f"""
 
-TEST_PATH: {TEST_PATH}
-REPO_PATH: {os.path.normpath(os.path.abspath(REPO_PATH))}
-OWNER:     {OWNER}
-"""
-)
+# TEST_PATH: {TEST_PATH}
+# REPO_PATH: {os.path.normpath(os.path.abspath(REPO_PATH))}
+# OWNER:     {OWNER}
+# """
+# )
 
 with open("temp_results.json", "w", encoding="utf-8") as temp_results:
     test_results = results_as_json(REPO_PATH)
