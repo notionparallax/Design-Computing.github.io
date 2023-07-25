@@ -1,3 +1,5 @@
+"""All the work to actually mark the students' work."""
+
 import json
 import math
 import os
@@ -11,7 +13,7 @@ import time
 from datetime import datetime
 from io import StringIO
 from itertools import repeat
-from typing import Any  # , Optional, Set, Tuple, TypeVar
+from typing import Any, Union
 
 import git
 import pandas as pd
@@ -78,8 +80,8 @@ def build_spreadsheet_service():
             except OSError as os_e:
                 print(os_e)
                 creds = flow.run_console()
-            except Exception as eeee:
-                print(eeee)
+            except Exception as mystery_error:
+                print(mystery_error)
         # Save the credentials for the next run
         with open("token.pickle", "wb") as token:
             pickle.dump(creds, token)
@@ -118,9 +120,9 @@ def write(service, data=[["These"], ["are"], ["some"], ["d", "entries"]]):
 def process_for_writing(data):
     for i, row in enumerate(data):
         for j, item in enumerate(row):
-            if type(item) is dict or type(item) is yaml.comments.CommentedMap:
+            if isinstance(item, dict) or isinstance(item, yaml.comments.CommentedMap):
                 data[i][j] = item.get("mark", str(dict(item)))
-            elif type(item) is not str and math.isnan(item):
+            elif (not isinstance(item, str)) and math.isnan(item):
                 data[i][j] = ""
     return data
 
@@ -129,7 +131,7 @@ def process_for_notes(data):
     comments = []
     for i, row in enumerate(data):
         for j, item in enumerate(row):
-            if type(item) is dict:
+            if isinstance(item, dict):
                 readable_comment: str = prepare_comment(item)
                 ss_comment_package: dict = set_comment(j, i, readable_comment)
                 comments.append(ss_comment_package)
@@ -138,31 +140,30 @@ def process_for_notes(data):
 
 def prepare_comment(item: dict) -> str:
     if "results" not in item.keys():
-        fu = "some kind of major fuck up"
-        return f"⚠ {item.get('bigerror', fu)} ⏱ {round(item.get('time', 0))}"
+        fk_up = "some kind of major fuck up"
+        return f"⚠ {item.get('bigerror', fk_up)} ⏱ {round(item.get('time', 0))}"
     test_results = []
-    for r in item["results"]:
-        icon = "👏" if r["value"] == 1 else "💩"
-        test_results.append(
-            f"{icon}: {r['name']}"
-        )  # TODO: trace this back, and get rid of the "name" key, make it exercise_name, or test_name
-    tr = "\n".join(test_results)
+    for res in item["results"]:
+        icon = "👏" if res["value"] == 1 else "💩"
+        test_results.append(f"{icon}: {res['name']}")
+        # TODO: trace this back, and get rid of the "name" key, make it exercise_name, or test_name
+    test_res = "\n".join(test_results)
     message = f"""{item['repo_owner']}
 ⏱ {round(item['time'])}
-{tr}
+{test_res}
 {item['mark']}/{item['of_total']}"""
     return message
 
 
-def set_comment(x, y, comment, y_offset=1):
+def set_comment(x_coord, y_coord, comment, y_offset=1):
     request: dict[str, Any] = {
         "repeatCell": {
             "range": {
                 "sheetId": 1704890600,
-                "startRowIndex": y + y_offset,
-                "endRowIndex": y + 1 + y_offset,
-                "startColumnIndex": x,
-                "endColumnIndex": x + 1,
+                "startRowIndex": y_coord + y_offset,
+                "endRowIndex": y_coord + 1 + y_offset,
+                "startColumnIndex": x_coord,
+                "endColumnIndex": x_coord + 1,
             },
             "cell": {"note": comment},
             "fields": "note",
@@ -171,10 +172,10 @@ def set_comment(x, y, comment, y_offset=1):
     return request
 
 
-def get_DF_from_CSV_URL(url, column_names=False):
+def get_df_from_csv_url(url: str, column_names: Union[list[str], bool] = False):
     """Get a csv of values from google docs."""
-    r = requests.get(url)
-    data = r.text
+    res = requests.get(url)
+    data = res.text
     if column_names:
         return pd.read_csv(StringIO(data), header=0, names=column_names)
     else:
@@ -191,9 +192,12 @@ def get_forks(
     Limits to repos created this year (THIS_YEAR as a const)
 
     Args:
-        org (str, optional): The name of the Github user/organisation to pull the forks from. Defaults to "design-computing".
-        repo (str, optional): The name of the repo to get the forks of. Defaults to "me".
-        force_inclusion_of_these_repos (list[str], optional): _description_. Defaults to [].
+        org (str, optional): The name of the Github user/organisation to pull
+                              the forks from. Defaults to "design-computing".
+        repo (str, optional): The name of the repo to get the forks of.
+                              Defaults to "me".
+        force_inclusion_of_these_repos (list[str], optional): _description_.
+                              Defaults to [].
 
     Raises:
         Exception: _description_
@@ -216,32 +220,33 @@ def get_forks(
         f"client_secret={secret}'"
     )
     print("get forks from:\n", url)
-    r = requests.get(url)
-    if r.status_code == 200:
-        forks = r.json()
+    response = requests.get(url)
+    if response.status_code == 200:
+        forks = response.json()
         repos = [
             {"owner": fork["owner"]["login"], "git_url": fork["git_url"]}
             for fork in forks
             # filter for this year's repos
             if (fork["created_at"][:4] == THIS_YEAR)
-            # a list of repos to get that aren't this year's, to account for students retaking the course
+            # a list of repos to get that aren't this year's,
+            # to account for students retaking the course
             or (fork["owner"]["login"] in force_inclusion_of_these_repos)
         ]
         return repos
     else:
-        rate_limit_message(r)
+        rate_limit_message(response)
         raise Exception("GitHubFuckYouError")
 
 
-def rate_limit_message(r):
+def rate_limit_message(response):
     rate_limit = requests.get("https://api.github.com/rate_limit").json().get("rate")
     reset_time = str(
         time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(rate_limit["reset"]))
     )
     print(
-        r.status_code,
-        r.reason,
-        json.dumps(r.json(), indent=2),
+        response.status_code,
+        response.reason,
+        json.dumps(response.json(), indent=2),
         json.dumps(rate_limit, indent=2),
         "try again at" + reset_time,
         sep="\n",
@@ -254,10 +259,10 @@ def update_repos(row: Series) -> str:
     https_url = url.replace("git://", "https://")
     owner = row["owner"]
     path = os.path.normpath(os.path.join(ROOTDIR, owner))
-    t = datetime.now().strftime("%H:%M:%S")
+    time_now_str = datetime.now().strftime("%H:%M:%S")
     try:
         git.Repo.clone_from(https_url, path)
-        print(f"{t}: new repo for {owner}")
+        print(f"{time_now_str}: new repo for {owner}")
         return ":) new"
     except git.GitCommandError as git_command_error:
         if "already exists and is not an empty directory" in git_command_error.stderr:
@@ -267,7 +272,7 @@ def update_repos(row: Series) -> str:
                 repo = git.cmd.Git(path)
                 try:
                     response = repo.pull()
-                    print(f"{t}: pulled {owner}'s repo: {response}")
+                    print(f"{time_now_str}: pulled {owner}'s repo: {response}")
                     return str(response)
                 except Exception as general_exception:
                     repo.execute(["git", "fetch", "--all"])
@@ -301,15 +306,16 @@ def try_to_kill(file_path: str, CHATTY: bool = False):
     try:
         os.remove(file_path)
         print(f"deleted {file_path}")
-    except Exception as e:
+    except Exception as mystery_error:
         if CHATTY:
-            print(file_path, e)
+            print(file_path, mystery_error)
 
 
-def pull_all_repos(dirList, CHATTY: bool = False, hardcore_pull: bool = False):
+def pull_all_repos(dir_list, CHATTY: bool = False, hardcore_pull: bool = False):
     """Pull latest version of all repos."""
-    of_total = len(dirList)
-    for i, student_repo in enumerate(dirList):
+    # TODO: make sure chatty is actually a global
+    of_total = len(dir_list)
+    for i, student_repo in enumerate(dir_list):
         repo_is_here = os.path.join(ROOTDIR, student_repo)
         try:
             repo = git.cmd.Git(repo_is_here)
@@ -317,16 +323,16 @@ def pull_all_repos(dirList, CHATTY: bool = False, hardcore_pull: bool = False):
                 repo.execute(["git", "fetch", "--all"])
                 repo.execute(["git", "reset", "--hard", "origin/main"])
             repo.pull()  # probably not needed, but belt and braces
-            t = datetime.now().strftime("%H:%M:%S")
-            print(f"{t}: {i}/{of_total} pulled {student_repo}'s repo")
-        except Exception as e:
-            print(student_repo, e)
+            time_now_str = datetime.now().strftime("%H:%M:%S")
+            print(f"{time_now_str}: {i}/{of_total} pulled {student_repo}'s repo")
+        except Exception as mystery_exception:
+            print(student_repo, mystery_exception)
 
 
-def csv_of_details(dirList):
+def csv_of_details(dir_list):
     """Make a CSV of all the students."""
     results = []
-    for student_repo in dirList:
+    for student_repo in dir_list:
         path = os.path.join(ROOTDIR, student_repo, "aboutMe.yml")
         details = open(path).read()
         # replaces the @ symbol
@@ -344,14 +350,14 @@ def csv_of_details(dirList):
 
             if details["studentNumber"] == "z1234567":
                 print(student_repo, "hasn't updated")
-        except Exception as e:
+        except Exception as mystery_error:
             print(details)
-            results.append({"error": e, "repoName": student_repo})
+            results.append({"error": mystery_error, "repoName": student_repo})
 
     print("\n\nResults:")
-    resultsDF = pd.DataFrame(results)
+    results_df = pd.DataFrame(results)
     # print(resultsDF)
-    resultsDF.to_csv(os.path.join(CWD, "csv/studentDetails.csv"))
+    results_df.to_csv(os.path.join(CWD, "csv/studentDetails.csv"))
     fix_up_csv()
 
 
@@ -366,7 +372,7 @@ def fix_up_csv(path="csv/studentDetails.csv"):
             line = line.replace("^AT^", "@")
             line = line.replace(",,", ",-,")
             lines.append(line)
-    with open(path, "w") as outfile:
+    with open(path, "w", encoding="utf-8") as outfile:
         for line in lines:
             print(line)
             outfile.write(line)
@@ -374,12 +380,14 @@ def fix_up_csv(path="csv/studentDetails.csv"):
 
 def log_progress(message, logfile_name):
     """Write a message to a logfile."""
-    completed_students_list = open(logfile_name, "a")
+    completed_students_list = open(logfile_name, "a", encoding="utf-8")
     completed_students_list.write(message)
     completed_students_list.close()
 
 
-def get_readmes(row, output="mark", print_labbooks=False):
+def get_readmes(
+    row, output="mark", print_labbooks=False
+) -> Union[int, str, list[Union[int, str]]]:
     """Get the text, or the mark, or both related to log books."""
     # intro_set  = "TODO: Reflect on what you learned this set and what is still unclear."
     # intro_week = "TODO: Reflect on what you learned this week and what is still unclear."
@@ -389,11 +397,11 @@ def get_readmes(row, output="mark", print_labbooks=False):
     mark = 0
     all_readme = ""
     for i in range(1, 11):
-        p = os.path.join(path, f"set{i}", "readme.md")
-        if os.path.isfile(p):
+        file_path = os.path.join(path, f"set{i}", "readme.md")
+        if os.path.isfile(file_path):
             try:
-                with open(p, "r", encoding="utf-8", errors="ignore") as f:
-                    contents = f.read()
+                with open(file_path, "r", encoding="utf-8", errors="ignore") as file:
+                    contents = file.read()
                     new = re.sub(regex, subst, contents, 0, re.MULTILINE).strip()
                     # print(i,"|", new, "|", len(new))
                     if len(new) > 0:
@@ -415,12 +423,16 @@ def get_readmes(row, output="mark", print_labbooks=False):
 
 def get_readme_text(row) -> str:
     """Get the collected text of all the readme files."""
-    return get_readmes(row, output="textList", print_labbooks=False)
+    text = get_readmes(row, output="textList", print_labbooks=False)
+    assert isinstance(text, str)
+    return text
 
 
 def get_readme_mark(row) -> int:
     """Get the number of readmen files that are filled in."""
-    return get_readmes(row, output="mark", print_labbooks=False)
+    mark = get_readmes(row, output="mark", print_labbooks=False)
+    assert isinstance(mark, int)
+    return mark
 
 
 def test_in_clean_environment(
@@ -467,8 +479,8 @@ def get_existing_marks_from_csv(row: Series, set_number: int) -> dict:
     except KeyError as k:
         print(f"no marks for set{set_number}", k)
         return {}
-    except Exception as e:
-        print(e)
+    except Exception as mystery_error:
+        print(mystery_error)
         return {}
 
 
@@ -544,50 +556,50 @@ def get_safe_path(*parts):
     return abs_path
 
 
-def prepare_log(logfile_name, firstLine="here we go:\n"):
+def prepare_log(logfile_name, first_line="here we go:\n"):
     """Create or empty the log file."""
-    completed_students_list = open(logfile_name, "w")
-    completed_students_list.write(firstLine)
+    completed_students_list = open(logfile_name, "w", encoding="utf-8")
+    completed_students_list.write(first_line)
     completed_students_list.close()
 
 
-def mark_work(dirList, set_number, root_dir, dfPlease=True, timeout=5):
+def mark_work(dir_list, set_number, root_dir, df_please=True, timeout=5):
     """Mark the set's exercises."""
     logfile_name = "temp_completion_log"
     prepare_log(logfile_name)
-    r = len(dirList)  # for repeat count
+    repeat_count = len(dir_list)  # for repeat count
 
     results = list(
         map(
             test_in_clean_environment,  # Function name
-            dirList,  # student_repo
-            repeat(root_dir, r),  # root_dir
-            repeat(set_number, r),  # set_number
-            repeat(logfile_name, r),  # logfile_name
-            repeat(timeout, r),  # timeout
+            dir_list,  # student_repo
+            repeat(root_dir, repeat_count),  # root_dir
+            repeat(set_number, repeat_count),  # set_number
+            repeat(logfile_name, repeat_count),  # logfile_name
+            repeat(timeout, repeat_count),  # timeout
         )
     )
 
-    resultsDF = pd.DataFrame(results)
+    results_df = pd.DataFrame(results)
     csv_path = f"csv/set{set_number}marks.csv"
-    resultsDF.to_csv(os.path.join(CWD, csv_path), index=False)
+    results_df.to_csv(os.path.join(CWD, csv_path), index=False)
     for _ in [1, 2, 3]:
         # this is pretty dirty, but it gets tricky when you have
         # ,,, -> ,-,, because each intance needs to be replaced multiple times
         # TODO: #makeitnice
         fix_up_csv(path=csv_path)
     print("\n+-+-+-+-+-+-+-+\n\n")
-    if dfPlease:
-        return resultsDF
+    if df_please:
+        return results_df
 
 
 def get_details(row: Series) -> dict:
     try:
-        path_to_aboutMe = os.path.abspath(
+        path_to_about_me = os.path.abspath(
             os.path.join(ROOTDIR, row.owner, "aboutMe.yml")
         )
-        with open(path_to_aboutMe, "r", encoding="utf-8") as yf:
-            details_raw_yaml = yf.read()
+        with open(path_to_about_me, "r", encoding="utf-8") as y_file:
+            details_raw_yaml = y_file.read()
         details: dict = dict(yaml.load(details_raw_yaml, yaml.RoundTripLoader))
         details["error"] = "👍"
         details["owner"] = row.owner
@@ -624,10 +636,14 @@ def mark_week(
     """Mark a single week for all students.
 
     Args:
-        mark_sheet (Dataframe): A dataframe that describes who's going to get marked
-        set_number (int, optional): The number of the set that we're marking. Defaults to 1.
-        timeout (int, optional): number of seconds to try for before we cut this student off. Defaults to 10.
-        active (bool, optional): Is this week being marked yet?. Defaults to True.
+        mark_sheet (Dataframe): A dataframe that describes who's
+                                going to get marked.
+        set_number (int, optional): The number of the set that we're marking.
+                                    Defaults to 1.
+        timeout (int, optional): number of seconds to try for before we cut
+                                 this student off. Defaults to 10.
+        active (bool, optional): Is this week being marked yet?.
+                                 Defaults to True.
 
     Returns:
         Series: A series of the marks, or if not active yet, 0
@@ -663,10 +679,12 @@ def do_the_marking(
 
     Args:
         this_year (str, optional): The year that you want to test. Defaults to "2023".
-        rootdir (str, optional): Where you want to keep all the repos you're working with. Defaults to "../StudentRepos".
+        rootdir (str, optional): Where you want to keep all the repos you're
+                                  working with. Defaults to "../StudentRepos".
         chatty (bool, optional): Do you want it to be verbose? Defaults to False.
         force_marking (bool, optional): _description_. Defaults to False.
-        marking_spreadsheet_id (str, optional): _description_. Defaults to "16tESt_4BUf-9-oD04suTprkd1O0oEl6WjzflF_avSKY".
+        marking_spreadsheet_id (str, optional): _description_. Defaults to
+                                "16tESt_4BUf-9-oD04suTprkd1O0oEl6WjzflF_avSKY".
         mark_w1 (bool, optional): _description_. Defaults to True.
         mark_w2 (bool, optional): _description_. Defaults to False.
         mark_w3 (bool, optional): _description_. Defaults to False.
@@ -710,6 +728,7 @@ def do_the_marking(
     mark_sheet["updated"] = mark_sheet.apply(update_repos, axis=1)
     mark_sheet["last_commit"] = mark_sheet.apply(get_last_commit, axis=1)
 
+    # TODO: Pass in timeouts and activity through the args, probably like {timeout=15, active=True}
     mark_sheet["set1"] = mark_week(mark_sheet, set_number=1, timeout=15, active=mark_w1)
     mark_sheet["set2"] = mark_week(mark_sheet, set_number=2, timeout=15, active=mark_w2)
     mark_sheet["set3"] = mark_week(mark_sheet, set_number=3, timeout=30, active=mark_w3)
@@ -777,12 +796,12 @@ def get_student_data():
     students = None
     file_name = "student.json"
     if os.path.exists(file_name):
-        with open(file_name, "r") as data_file:
+        with open(file_name, "r", encoding="utf-8") as data_file:
             students = json.load(data_file)
     else:
         force_repos = FORCE_REPOS
         students = get_forks(force_inclusion_of_these_repos=force_repos)
-        with open("student.json", "w") as data_file:
+        with open("student.json", "w", encoding="utf-8") as data_file:
             json.dump(students, data_file, indent=2)
     return students
 
