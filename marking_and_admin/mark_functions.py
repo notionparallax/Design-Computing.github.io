@@ -22,6 +22,7 @@ import ruamel.yaml as yaml
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from marker import set_meta
 from pandas import DataFrame, Series
 
 
@@ -627,7 +628,7 @@ def get_last_commit(row: Series) -> str:
         # TODO: find out why I was returning a no commits error
 
 
-def mark_week(
+def mark_set(
     mark_sheet: DataFrame,
     set_number: int = 1,
     timeout: int = 10,
@@ -666,12 +667,12 @@ def do_the_marking(
     force_marking=False,
     marking_spreadsheet_id: str = "16tESt_4BUf-9-oD04suTprkd1O0oEl6WjzflF_avSKY",  # 2022
     marks_csv: str = "marks.csv",
-    w1: dict[str, int | bool] = {"timeout": 5, "active": False},
-    w2: dict[str, int | bool] = {"timeout": 5, "active": False},
-    w3: dict[str, int | bool] = {"timeout": 5, "active": False},
-    w4: dict[str, int | bool] = {"timeout": 5, "active": False},
-    w5: dict[str, int | bool] = {"timeout": 5, "active": False},
-    exam: dict[str, int | bool] = {"timeout": 5, "active": False},
+    set_1: set_meta = {"timeout": 5, "active": False},
+    set_2: set_meta = {"timeout": 5, "active": False},
+    set_3: set_meta = {"timeout": 5, "active": False},
+    set_4: set_meta = {"timeout": 5, "active": False},
+    set_5: set_meta = {"timeout": 5, "active": False},
+    exam: set_meta = {"timeout": 5, "active": False},
     test_number_of_students: int = 0,
     force_repos: list[str] = [],
 ) -> None:
@@ -728,22 +729,22 @@ def do_the_marking(
     mark_sheet["updated"] = mark_sheet.apply(update_repos, axis=1)
     mark_sheet["last_commit"] = mark_sheet.apply(get_last_commit, axis=1)
 
-    mark_sheet["set1"] = mark_week(
-        mark_sheet, set_number=1, timeout=w1["timeout"], active=w1["active"]
+    mark_sheet["set1"] = mark_set(
+        mark_sheet, set_number=1, timeout=set_1["timeout"], active=set_1["active"]
     )
-    mark_sheet["set2"] = mark_week(
-        mark_sheet, set_number=2, timeout=w2["timeout"], active=w2["active"]
+    mark_sheet["set2"] = mark_set(
+        mark_sheet, set_number=2, timeout=set_2["timeout"], active=set_2["active"]
     )
-    mark_sheet["set3"] = mark_week(
-        mark_sheet, set_number=3, timeout=w3["timeout"], active=w3["active"]
+    mark_sheet["set3"] = mark_set(
+        mark_sheet, set_number=3, timeout=set_3["timeout"], active=set_3["active"]
     )
-    mark_sheet["set4"] = mark_week(
-        mark_sheet, set_number=4, timeout=w4["timeout"], active=w4["active"]
+    mark_sheet["set4"] = mark_set(
+        mark_sheet, set_number=4, timeout=set_4["timeout"], active=set_4["active"]
     )
-    mark_sheet["set5"] = mark_week(
-        mark_sheet, set_number=5, timeout=w5["timeout"], active=w5["active"]
+    mark_sheet["set5"] = mark_set(
+        mark_sheet, set_number=5, timeout=set_5["timeout"], active=set_5["active"]
     )
-    mark_sheet["exam"] = mark_week(
+    mark_sheet["exam"] = mark_set(
         mark_sheet, set_number=8, timeout=exam["timeout"], active=exam["active"]
     )
     mark_sheet.drop(["name"], axis=1, errors="ignore", inplace=True)
@@ -796,6 +797,9 @@ def convert_result_dicts_to_ints(mark_sheet):
         mark_sheet[f"set{i}"] = mark_sheet[f"set{i}"].apply(
             convert_one_results_dict_to_an_int
         )
+
+    mark_sheet["exam_data"] = mark_sheet[f"exam"]
+    mark_sheet[f"exam"] = mark_sheet[f"exam"].apply(convert_one_results_dict_to_an_int)
 
 
 def get_student_data():

@@ -6,8 +6,17 @@ It can clone new repos if you delete the students pickle
 """
 import os
 import sys
+from typing import TypedDict
 
 from mark_functions import do_the_marking
+
+
+class set_meta(TypedDict):
+    """week is just to keep the typechecker happy."""
+
+    timeout: int
+    active: bool
+
 
 MARKING_SPREADSHEET_ID = os.getenv("GOOGLE_SHEETS_KEY", "")
 
@@ -22,12 +31,12 @@ if __name__ == "__main__" and MARKING_SPREADSHEET_ID != "":
         force_marking=True,
         marking_spreadsheet_id=MARKING_SPREADSHEET_ID,
         marks_csv="marking_and_admin/marks.csv",
-        mark_w1={"timeout":15, "active":True},
-        mark_w2={"timeout":15, "active":True},
-        mark_w3={"timeout":30, "active":True},
-        mark_w4={"timeout":50, "active":True},
-        mark_w5={"timeout":50, "active":False},
-        mark_exam={"timeout":45, "active":True},
+        set_1={"timeout": 15, "active": True},
+        set_2={"timeout": 15, "active": True},
+        set_3={"timeout": 30, "active": True},
+        set_4={"timeout": 50, "active": True},
+        set_5={"timeout": 50, "active": False},
+        exam={"timeout": 45, "active": True},
         test_number_of_students=0,  # if more than 0, will only mark a sample of N repos
         force_repos=["lvl-lim", "JeWang"],
     )
