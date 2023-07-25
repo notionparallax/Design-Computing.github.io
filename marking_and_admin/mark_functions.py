@@ -13,11 +13,7 @@ import time
 from datetime import datetime
 from io import StringIO
 from itertools import repeat
-<<<<<<< HEAD
 from typing import Any, Union
-=======
-from typing import Any, Union  # , Optional, Set, Tuple, TypeVar
->>>>>>> aa05ff90144b910a132564720daa853f06f95ff5
 
 import git
 import pandas as pd
@@ -315,15 +311,9 @@ def try_to_kill(file_path: str):
             print(file_path, mystery_error)
 
 
-<<<<<<< HEAD
 def pull_all_repos(dir_list, hardcore_pull: bool = False):
     """Pull latest version of all repos."""
 
-=======
-def pull_all_repos(dir_list, CHATTY: bool = False, hardcore_pull: bool = False):
-    """Pull latest version of all repos."""
-    # TODO: make sure chatty is actually a global
->>>>>>> aa05ff90144b910a132564720daa853f06f95ff5
     of_total = len(dir_list)
     for i, student_repo in enumerate(dir_list):
         repo_is_here = os.path.join(ROOTDIR, student_repo)
