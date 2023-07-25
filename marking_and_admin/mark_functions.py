@@ -503,16 +503,27 @@ def mark_a_specific_person_week(
     test_args = [python, path_to_test_shim, path_to_tests, path_to_repo, row.owner]
 
     try:
+        time_in = datetime.now()
         RunCmd(test_args, timeout).Run()  # this is unessarily complicated
-
+        time_out = datetime.now()
+        total_time_seconds = (time_out - time_in).total_seconds()
         # full_path = os.path.join(LOCAL, temp_file_path)
         with open(
             temp_file_path, "r", encoding="utf-8", errors="ignore"
         ) as temp_results:
             contents = temp_results.read()
-            # TODO: catch empty string contents, and make the error message better
-            results_dict = json.loads(contents)
-            results_dict["bigerror"] = ":)"
+            practical_timeout = math.floor(timeout * 0.98)
+            if total_time_seconds > practical_timeout:
+                print("\n\nAnnoying timeout ⌛⏳⌛⏳", "\n" * 5)
+                message = (
+                    "Execution timed out. "
+                    + f"It was given {practical_timeout} seconds to complete."
+                )
+                results_dict = {"bigerror": message, "gh_username": row.owner}
+            else:
+                # TODO: catch empty string contents, and make the error message better
+                results_dict = json.loads(contents)
+                results_dict["bigerror"] = ":)"
         log_progress(f" good for w{set_number}\n", logfile_name)
     except json.JSONDecodeError as json_exception:
         results_dict = {
