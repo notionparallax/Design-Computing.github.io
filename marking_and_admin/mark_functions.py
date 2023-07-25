@@ -301,7 +301,7 @@ def update_repos(row: Series) -> str:
         return message
 
 
-def try_to_kill(file_path: str, CHATTY: bool = False):
+def try_to_kill(file_path: str):
     """Attempt to delete the file specified by file_path."""
     try:
         os.remove(file_path)
@@ -311,9 +311,9 @@ def try_to_kill(file_path: str, CHATTY: bool = False):
             print(file_path, mystery_error)
 
 
-def pull_all_repos(dir_list, CHATTY: bool = False, hardcore_pull: bool = False):
+def pull_all_repos(dir_list, hardcore_pull: bool = False):
     """Pull latest version of all repos."""
-    # TODO: make sure chatty is actually a global
+
     of_total = len(dir_list)
     for i, student_repo in enumerate(dir_list):
         repo_is_here = os.path.join(ROOTDIR, student_repo)
@@ -666,12 +666,12 @@ def do_the_marking(
     force_marking=False,
     marking_spreadsheet_id: str = "16tESt_4BUf-9-oD04suTprkd1O0oEl6WjzflF_avSKY",  # 2022
     marks_csv: str = "marks.csv",
-    mark_w1: bool = True,
-    mark_w2: bool = False,
-    mark_w3: bool = False,
-    mark_w4: bool = False,
-    mark_w5: bool = False,
-    mark_exam: bool = False,
+    w1: dict[str, int | bool] = {"timeout": 5, "active": False},
+    w2: dict[str, int | bool] = {"timeout": 5, "active": False},
+    w3: dict[str, int | bool] = {"timeout": 5, "active": False},
+    w4: dict[str, int | bool] = {"timeout": 5, "active": False},
+    w5: dict[str, int | bool] = {"timeout": 5, "active": False},
+    exam: dict[str, int | bool] = {"timeout": 5, "active": False},
     test_number_of_students: int = 0,
     force_repos: list[str] = [],
 ) -> None:
@@ -728,14 +728,23 @@ def do_the_marking(
     mark_sheet["updated"] = mark_sheet.apply(update_repos, axis=1)
     mark_sheet["last_commit"] = mark_sheet.apply(get_last_commit, axis=1)
 
-    # TODO: Pass in timeouts and activity through the args, probably like {timeout=15, active=True}
-    mark_sheet["set1"] = mark_week(mark_sheet, set_number=1, timeout=15, active=mark_w1)
-    mark_sheet["set2"] = mark_week(mark_sheet, set_number=2, timeout=15, active=mark_w2)
-    mark_sheet["set3"] = mark_week(mark_sheet, set_number=3, timeout=30, active=mark_w3)
-    mark_sheet["set4"] = mark_week(mark_sheet, set_number=4, timeout=50, active=mark_w4)
-    mark_sheet["set5"] = mark_week(mark_sheet, set_number=5, timeout=50, active=mark_w5)
+    mark_sheet["set1"] = mark_week(
+        mark_sheet, set_number=1, timeout=w1["timeout"], active=w1["active"]
+    )
+    mark_sheet["set2"] = mark_week(
+        mark_sheet, set_number=2, timeout=w2["timeout"], active=w2["active"]
+    )
+    mark_sheet["set3"] = mark_week(
+        mark_sheet, set_number=3, timeout=w3["timeout"], active=w3["active"]
+    )
+    mark_sheet["set4"] = mark_week(
+        mark_sheet, set_number=4, timeout=w4["timeout"], active=w4["active"]
+    )
+    mark_sheet["set5"] = mark_week(
+        mark_sheet, set_number=5, timeout=w5["timeout"], active=w5["active"]
+    )
     mark_sheet["exam"] = mark_week(
-        mark_sheet, set_number=8, timeout=45, active=mark_exam
+        mark_sheet, set_number=8, timeout=exam["timeout"], active=exam["active"]
     )
     mark_sheet.drop(["name"], axis=1, errors="ignore", inplace=True)
 
@@ -790,9 +799,6 @@ def convert_result_dicts_to_ints(mark_sheet):
 
 
 def get_student_data():
-    # TODO: instead of loading the pickle, load the marks.csv file so that
-    # the dataframe is preloaded with values. Then it doesn't need to mark students
-    # that haven't updated their work.
     students = None
     file_name = "student.json"
     if os.path.exists(file_name):
