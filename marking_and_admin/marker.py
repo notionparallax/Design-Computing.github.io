@@ -6,17 +6,8 @@ It can clone new repos if you delete the students pickle
 """
 import os
 import sys
-from typing import TypedDict
 
 from mark_functions import do_the_marking
-
-
-class set_meta(TypedDict):
-    """week is just to keep the typechecker happy."""
-
-    timeout: int
-    active: bool
-
 
 MARKING_SPREADSHEET_ID = os.getenv("GOOGLE_SHEETS_KEY", "")
 

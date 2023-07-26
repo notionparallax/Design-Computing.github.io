@@ -22,7 +22,7 @@ import ruamel.yaml as yaml
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-from marker import set_meta
+from marking_types import set_meta
 from pandas import DataFrame, Series
 
 
